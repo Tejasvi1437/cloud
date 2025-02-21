@@ -77,20 +77,20 @@ HTML_TEMPLATE = """
     <div class="container">
         <h2>To-Do List</h2>
         <input type="text" id="taskInput" placeholder="Add a new task...">
-        <button onclick="addTask()">Add</button>
+        <button id="addButton">Add</button>
         <ul id="taskList">
             {% for task in tasks %}
                 <li class="{{ 'completed' if task['completed'] else '' }}" id="task-{{ loop.index0 }}">
                     {{ task['text'] }}
-                    <button onclick="removeTask({{ loop.index0 }})">❌</button>
-                    <button onclick="toggleTask({{ loop.index0 }})">✔️</button>
+                    <button class="removeButton" data-id="{{ loop.index0 }}">❌</button>
+                    <button class="toggleButton" data-id="{{ loop.index0 }}">✔️</button>
                 </li>
             {% endfor %}
         </ul>
     </div>
 
     <script>
-        function addTask() {
+        document.getElementById("addButton").addEventListener("click", function() {
             let taskInput = document.getElementById("taskInput");
             let taskText = taskInput.value.trim();
             if (taskText === "") return;
@@ -106,23 +106,27 @@ HTML_TEMPLATE = """
             .then(data => updateTaskList(data.tasks));
 
             taskInput.value = "";
-        }
+        });
 
-        function removeTask(taskId) {
-            fetch(`/remove/${taskId}`, {
-                method: "DELETE"
-            })
-            .then(response => response.json())
-            .then(data => updateTaskList(data.tasks));
-        }
+        document.getElementById("taskList").addEventListener("click", function(event) {
+            if (event.target.classList.contains("removeButton")) {
+                const taskId = event.target.getAttribute("data-id");
+                fetch(`/remove/${taskId}`, {
+                    method: "DELETE"
+                })
+                .then(response => response.json())
+                .then(data => updateTaskList(data.tasks));
+            }
 
-        function toggleTask(taskId) {
-            fetch(`/toggle/${taskId}`, {
-                method: "POST"
-            })
-            .then(response => response.json())
-            .then(data => updateTaskList(data.tasks));
-        }
+            if (event.target.classList.contains("toggleButton")) {
+                const taskId = event.target.getAttribute("data-id");
+                fetch(`/toggle/${taskId}`, {
+                    method: "POST"
+                })
+                .then(response => response.json())
+                .then(data => updateTaskList(data.tasks));
+            }
+        });
 
         function updateTaskList(tasks) {
             const taskList = document.getElementById("taskList");
@@ -130,7 +134,9 @@ HTML_TEMPLATE = """
             tasks.forEach((task, index) => {
                 const li = document.createElement("li");
                 li.className = task.completed ? 'completed' : '';
-                li.innerHTML = `${task.text} <button onclick="removeTask(${index})">❌</button> <button onclick="toggleTask(${index})">✔️</button>`;
+                li.innerHTML = `${task.text} 
+                                <button class="removeButton" data-id="${index}">❌</button> 
+                                <button class="toggleButton" data-id="${index}">✔️</button>`;
                 taskList.appendChild(li);
             });
         }
